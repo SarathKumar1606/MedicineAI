@@ -1,37 +1,18 @@
 import json
-from rapidfuzz import process
+
+def load_vocab(vocab_path="medicine_vocab.json"):
+    with open(vocab_path, "r") as f:
+        return json.load(f)
 
 
-class MedicineMatcher:
-    def __init__(self, vocab_path="medicine_vocab.json"):
-        # Load vocabulary
-        with open(vocab_path, "r") as f:
-            self.vocab = json.load(f)
+def match_medicines(text, vocab_path="medicine_vocab.json"):
+    vocab = load_vocab(vocab_path)
 
-    def match(self, text, top_k=3):
-        text = text.lower().strip()
+    found = []
+    text_lower = text.lower()
 
-        # Get best matches
-        matches = process.extract(
-            text,
-            self.vocab,
-            limit=top_k
-        )
+    for med in vocab:
+        if med.lower() in text_lower:
+            found.append(med)
 
-        # Format output
-        results = []
-        for match in matches:
-            results.append({
-                "medicine": match[0],
-                "score": match[1]
-            })
-
-        return results
-
-    def best_match(self, text):
-        matches = self.match(text, top_k=1)
-
-        if matches:
-            return matches[0]["medicine"], matches[0]["score"]
-        else:
-            return text, 0
+    return found
