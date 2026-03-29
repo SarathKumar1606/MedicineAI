@@ -528,7 +528,7 @@
 
   <!-- Submit -->
   <div style="text-align:center">
-    <button class="btn-analyze" id="btnAnalyze" disabled onclick="analyze()">
+    <button class="btn-analyze" id="btnAnalyze" disabled onclick="analyze()"> 
       <span id="btnIcon">🧬</span>
       <span id="btnText">Analyze Prescription</span>
     </button>
@@ -573,7 +573,8 @@
 
 <script>
   // ── Config ──────────────────────────────────────────────
-  const API_URL = "http://127.0.0.1:8000/analyze";
+  //-1ST VERSION const API_URL = "http://127.0.0.1:8000/analyze";
+  const API_URL = "http://127.0.0.1:8000/upload/";
   // ────────────────────────────────────────────────────────
 
   const fileInput   = document.getElementById("fileInput");
