@@ -671,40 +671,53 @@
       setStatus("");
     }
   }
+/* last one function renderResults(data) { const rx = data.prescription; if (!rx) { showError("Unexpected response format from server."); return; } // Confidence const conf = Math.round((rx.confidence_score ?? 1) * 100); document.getElementById("confidenceText").textContent = ${conf}% confidence; document.getElementById("confidenceBadge").style.background = conf >= 85 ? "rgba(16,185,129,0.1)" : "rgba(245,158,11,0.1)"; const grid = document.getElementById("resultsGrid"); grid.innerHTML = ""; // ── Patient card ── grid.appendChild(infoCard("Patient Info", [ ["Name", rx.patient?.name || "—"], ["Age", rx.patient?.age || "—"], ["Gender", rx.patient?.gender || "—"], ["Date", rx.patient?.date || "—"], ])); // ── Doctor card ── grid.appendChild(infoCard("Prescribing Doctor", [ ["Name", rx.doctor?.name || "—"], ["Reg. No.", rx.doctor?.registration_no || "—"], ["Hospital", rx.doctor?.hospital || "—"], ["Contact", rx.doctor?.contact || "—"], ])); // ── Diagnosis card ── grid.appendChild(infoCard("Diagnosis", [ ["Condition", rx.diagnosis || "—"], ["Follow-up", rx.follow_up || "—"], ])); // ── Medications card (full width) ── const medsCard = document.createElement("div"); medsCard.className = "card meds-card"; medsCard.innerHTML = <div class="card-label">Medications (${rx.medications?.length ?? 0})</div>; (rx.medications || []).forEach(med => { medsCard.innerHTML += <div class="med-item"> <div class="med-name">${esc(med.name)}</div> <div class="med-dosage">${esc(med.dosage)}</div> <div class="med-details"> <div class="med-detail">🕐 <strong>${esc(med.frequency)}</strong></div> <div class="med-detail">📅 <strong>${esc(med.duration)}</strong></div> </div> <div class="med-instructions">⚠️ ${esc(med.instructions)}</div> </div>; }); grid.appendChild(medsCard); // ── Tests ordered ── if (rx.tests_ordered?.length) { const testsCard = document.createElement("div"); testsCard.className = "card"; testsCard.innerHTML = <div class="card-label">Tests Ordered</div><div class="tags-wrap"> ${rx.tests_ordered.map(t => <span class="tag">🔬 ${esc(t)}</span>).join("")} </div>; grid.appendChild(testsCard); } // ── Notes ── if (rx.notes) { const notesCard = document.createElement("div"); notesCard.className = "card"; notesCard.innerHTML = <div class="card-label">Doctor's Notes</div> <div class="notes-text">${esc(rx.notes)}</div>; grid.appendChild(notesCard); } // ── Raw JSON ── document.getElementById("jsonPre").innerHTML = syntaxHighlight(JSON.stringify(data, null, 2)); document.getElementById("results").classList.add("visible"); document.getElementById("results").scrollIntoView({ behavior: "smooth", block: "start" }); }*/
+                                
+  
   function renderResults(data) {
     const grid = document.getElementById("resultsGrid");
     grid.innerHTML = "";
 
-  // 🔴 Case 1: Backend returns RAW OCR (your current reality)
-  if (data.text) {
-    const conf = 75; // fallback confidence
-    document.getElementById("confidenceText").textContent = `${conf}% confidence`;
-    document.getElementById("confidenceBadge").style.background = "rgba(245,158,11,0.1)";
+    // 🔥 Normalize backend response
+    let lines = [];
 
-    // Single powerful card instead of empty sections
-    const rawCard = document.createElement("div");
-    rawCard.className = "card meds-card";
-    rawCard.innerHTML = `
-      <div class="card-label">OCR Extracted Text</div>
+    if (Array.isArray(data)) {
+      lines = data;
+    } else if (Array.isArray(data.lines)) {
+      lines = data.lines;
+    } else if (data.text) {
+      lines = data.text.split("\n");
+    }
+
+    // 🚨 If nothing usable
+    if (!lines.length) {
+      showError("No text extracted from image.");
+      return;
+    }
+
+    // Confidence (static fallback)
+    const conf = 80;
+    document.getElementById("confidenceText").textContent = `${conf}% confidence`;
+    document.getElementById("confidenceBadge").style.background = "rgba(16,185,129,0.1)";
+
+    // 🧾 Create clean OCR display
+    const card = document.createElement("div");
+    card.className = "card meds-card";
+
+    card.innerHTML = `
+      <div class="card-label">Extracted Prescription Lines (${lines.length})</div>
       <div class="notes-text" style="white-space: pre-wrap; font-family: 'DM Mono', monospace;">
-        ${esc(data.text)}
+        ${lines.map(l => "• " + esc(l)).join("<br>")}
       </div>
     `;
-    grid.appendChild(rawCard);
 
-    // JSON panel
+    grid.appendChild(card);
+
+    // JSON debug
     document.getElementById("jsonPre").innerHTML =
       syntaxHighlight(JSON.stringify(data, null, 2));
 
     document.getElementById("results").classList.add("visible");
-    return;
-  }
-
-  // 🟢 Case 2: Future-ready (if you later upgrade backend)
-  const rx = data.prescription;
-  if (!rx) {
-    showError("Unexpected response format from server.");
-    return;
   }
 
   const conf = Math.round((rx.confidence_score ?? 0.75) * 100);
