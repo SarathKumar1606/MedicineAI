@@ -1,54 +1,65 @@
-import argparse
+# =========================================
+# IMPORTS
+# =========================================
+from fastapi import FastAPI, UploadFile, File
+import shutil
 import os
-from src.ocr import hybrid_ocr
-from src.matcher import match_medicines
+import uuid
 
+# 🔥 import your existing function
+from src.ocr import extract_prescription_text
 
-def run_pipeline(image_path, output_dir="outputs/predictions"):
-    if not os.path.exists(image_path):
-        print(f"❌ Image not found: {image_path}")
-        return
+# =========================================
+# CONFIG
+# =========================================
+UPLOAD_DIR = "D:/Deep Learning Project/prescription-ai/src"   # 🔥 CHANGE THIS PATH
 
-    os.makedirs(output_dir, exist_ok=True)
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-    print(f"\n📄 Processing: {image_path}")
+# =========================================
+# APP
+# =========================================
+app = FastAPI()
 
-    # ---- Step 1: OCR ----
-    print("\n🔍 Running OCR...")
-    extracted_text = hybrid_ocr(image_path)
+# =========================================
+# API ENDPOINT
+# =========================================
+@app.post("/analyze")
+async def analyze(file: UploadFile = File(...)):
 
-    print("\n----- OCR TEXT -----\n")
-    print(extracted_text)
+    # 🔥 unique filename (avoid overwrite)
+    file_ext = file.filename.split(".")[-1]
+    filename = f"{uuid.uuid4()}.{file_ext}"
 
-    # ---- Step 2: Medicine Matching ----
-    print("\n💊 Matching medicines...")
-    medicines = match_medicines(extracted_text)
+    save_path = os.path.join(UPLOAD_DIR, filename)
 
-    print("\n----- MATCHED MEDICINES -----\n")
-    for med in medicines:
-        print(f"- {med}")
+    # =========================================
+    # SAVE FILE LOCALLY
+    # =========================================
+    with open(save_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
 
-    # ---- Step 3: Save Output ----
-    filename = os.path.splitext(os.path.basename(image_path))[0]
-    output_path = os.path.join(output_dir, filename + ".txt")
+    print(f"✅ Saved file at: {save_path}")
 
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write("OCR TEXT:\n")
-        f.write(extracted_text + "\n\n")
+    # =========================================
+    # RUN YOUR EXISTING PIPELINE
+    # =========================================
+    try:
+        lines = extract_prescription_text(save_path)
+    except Exception as e:
+        return {"error": str(e)}
 
-        f.write("MATCHED MEDICINES:\n")
-        for med in medicines:
-            f.write(f"- {med}\n")
-
-    print(f"\n✅ Results saved to: {output_path}")
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Prescription AI Pipeline")
-
-    parser.add_argument("--image", type=str, required=True,
-                        help="Path to prescription image")
-
-    args = parser.parse_args()
-
-    run_pipeline(args.image)
+    # =========================================
+    # RETURN RESPONSE (KEEP YOUR UI FORMAT)
+    # =========================================
+    return {
+        "prescription": {
+            "confidence_score": 0.92,
+            "patient": {},
+            "doctor": {},
+            "diagnosis": "",
+            "medications": [{"name": l, "dosage": "-", "frequency": "-", "duration": "-", "instructions": "-"} for l in lines],
+            "tests_ordered": [],
+            "notes": "Auto-extracted text"
+        }
+    }

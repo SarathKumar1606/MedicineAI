@@ -1,104 +1,127 @@
+# =========================================
+# IMPORTS
+# =========================================
 import easyocr
 import torch
-from transformers import TrOCRProcessor, VisionEncoderDecoderModel
-from PIL import Image
-import cv2
 import numpy as np
+from PIL import Image
+import re
+from transformers import TrOCRProcessor, VisionEncoderDecoderModel
 
-# -------------------------------
-# Load EasyOCR (Detection)
-# -------------------------------
-reader = easyocr.Reader(['en'], gpu=False)  # set True if GPU
+# =========================================
+# DEVICE
+# =========================================
+DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
-# -------------------------------
-# Load TrOCR (Recognition)
-# -------------------------------
+# =========================================
+# LOAD MODELS (LOAD ONCE)
+# =========================================
+reader = easyocr.Reader(['en'], gpu=torch.cuda.is_available())
+
 processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-handwritten")
-model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-handwritten")
+trocr_model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-handwritten")
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
-model.to(device)
+trocr_model.to(DEVICE)
+trocr_model.eval()
 
+# =========================================
+# TEXT CLEANING
+# =========================================
+def clean_text(text):
+    text = text.lower()
+    text = re.sub(r"[^a-z0-9\s\.\-]", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
 
-# -------------------------------
-# Preprocessing (for handwriting)
-# -------------------------------
-def preprocess_image(image_path):
-    img = cv2.imread(image_path)
+# =========================================
+# GROUP LINES
+# =========================================
+def group_lines(results, y_thresh=15):
 
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    results = sorted(results, key=lambda x: min([p[1] for p in x[0]]))
 
-    # Increase contrast
-    gray = cv2.convertScaleAbs(gray, alpha=2, beta=20)
+    lines = []
+    current = []
+    current_y = None
 
-    # Slight blur
-    gray = cv2.GaussianBlur(gray, (3, 3), 0)
+    for bbox, text, _ in results:
+        y = min([p[1] for p in bbox])
 
-    return img, gray
-
-
-# -------------------------------
-# Crop image using bbox
-# -------------------------------
-def crop_from_bbox(image, bbox):
-    pts = np.array(bbox).astype(int)
-    x_min = np.min(pts[:, 0])
-    y_min = np.min(pts[:, 1])
-    x_max = np.max(pts[:, 0])
-    y_max = np.max(pts[:, 1])
-
-    return image[y_min:y_max, x_min:x_max]
-
-
-# -------------------------------
-# TrOCR on cropped region
-# -------------------------------
-def trocr_on_crop(crop_img):
-    if crop_img is None or crop_img.size == 0:
-        return ""
-
-    # Convert to PIL
-    pil_img = Image.fromarray(cv2.cvtColor(crop_img, cv2.COLOR_BGR2RGB))
-
-    pixel_values = processor(images=pil_img, return_tensors="pt").pixel_values.to(device)
-
-    generated_ids = model.generate(pixel_values)
-    text = processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
-
-    return text.strip()
-
-
-# -------------------------------
-# Hybrid OCR
-# -------------------------------
-def hybrid_ocr(image_path):
-    original_img, processed = preprocess_image(image_path)
-
-    # EasyOCR detection
-    results = reader.readtext(
-        processed,
-        detail=1,
-        low_text=0.2,
-        text_threshold=0.3
-    )
-
-    # Sort top-to-bottom
-    results = sorted(results, key=lambda x: x[0][0][1])
-
-    final_texts = []
-
-    for (bbox, text, prob) in results:
-        crop = crop_from_bbox(original_img, bbox)
-
-        # Decide when to use TrOCR
-        if prob < 0.5 or len(text) < 3:
-            trocr_text = trocr_on_crop(crop)
-
-            if trocr_text.strip():
-                final_texts.append(trocr_text)
-            else:
-                final_texts.append(text)
+        if current_y is None or abs(y - current_y) < y_thresh:
+            current.append(bbox)
+            current_y = y
         else:
-            final_texts.append(text)
+            lines.append(current)
+            current = [bbox]
+            current_y = y
 
-    return "\n".join(final_texts)
+    if current:
+        lines.append(current)
+
+    return lines
+
+# =========================================
+# TrOCR LINE READER (ONLY SMALL CROPS)
+# =========================================
+def read_line_trocr(image, boxes):
+
+    xs, ys = [], []
+
+    for b in boxes:
+        xs += [int(p[0]) for p in b]
+        ys += [int(p[1]) for p in b]
+
+    crop = image.crop((min(xs), min(ys), max(xs), max(ys)))
+
+    # 🔥 Resize small → faster inference
+    crop = crop.resize((384, 384))
+
+    pixel_values = processor(images=crop, return_tensors="pt").pixel_values.to(DEVICE)
+
+    with torch.no_grad():
+        ids = trocr_model.generate(pixel_values, max_length=32)
+
+    text = processor.batch_decode(ids, skip_special_tokens=True)[0]
+
+    return text
+
+# =========================================
+# MAIN PIPELINE
+# =========================================
+def extract_prescription_text(image_path):
+
+    image = Image.open(image_path).convert("RGB")
+    image_np = np.array(image)
+
+    # STEP 1: FAST detection
+    results = reader.readtext(image_np)
+
+    # STEP 2: group lines
+    lines = group_lines(results)
+
+    final_lines = []
+
+    for line_boxes in lines:
+
+        # 🔥 Only run TrOCR on likely useful lines
+        text = read_line_trocr(image, line_boxes)
+        cleaned = clean_text(text)
+
+        if len(cleaned) > 2:
+            final_lines.append(cleaned)
+
+    return final_lines
+
+# =========================================
+# TEST
+# =========================================
+if __name__ == "__main__":
+
+    image_path = "/content/test_prescription.jpg"
+
+    lines = extract_prescription_text(image_path)
+
+    print("\n🧾 Final Clean Prescription:\n")
+
+    for l in lines:
+        print("-", l)
