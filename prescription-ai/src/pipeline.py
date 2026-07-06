@@ -1,21 +1,52 @@
-import pandas as pd
-import os
-import json
+<!DOCTYPE html>
+<html>
+<head>
+<script language="JavaScript">
+flag=1;
+function addemail()
+{
 
-BASE_DIR = "dataset"
+let a=document.f1.email.value;
+if(a.indexOf("@")!=a.lastIndexOf("@"))
+flag=0;
+else if(a.indexOf(".")<a.indexOf("@"))
+flag=0;
+else if(a.indexOf(".")-1==a.indexOf("@"))
+flag=0;
+else if(a.indexOf("@")==0)
+flag=0;
+else if(a.length-4!=a.indexOf("."))
+flag=0;
 
-meds = set()
 
-for split in ["Training", "Validation", "Testing"]:
-    path = os.path.join(BASE_DIR, split)
-    csv_file = [f for f in os.listdir(path) if f.endswith(".csv")][0]
-    
-    df = pd.read_csv(os.path.join(path, csv_file))
-    meds.update(df["MEDICINE_NAME"].str.lower().str.strip())
+for(i=0;i<a.length;i++)
+{
+    b=(a.charCodeAt(i)>=97 && a.charCodeAt(i)<=126) || (a.charCodeAt(i) == 64) || (a.charCodeAt(i)==46) || (a.charCodeAt(i)>=48 && a.charCodeAt(i) <=58)
+    if(b!= true)
+    {
+      flag=0;
+        break;
+      }
+   }
 
-vocab = sorted(list(meds))
 
-with open("medicine_vocab.json", "w") as f:
-    json.dump(vocab, f, indent=2)
+if (flag==0)
+document.write("invalid");
+else
+document.write("valid");
+}
 
-print("Saved vocab:", len(vocab))
+
+
+
+</script>
+</head>
+<body>
+<form id="f1" name="f1">
+
+<label>EMAIL</Label>
+<input type="email" name="email"/>
+<input type="button" value="Chk" onClick="addemail()"/>
+</form>
+</body>
+</html>

@@ -7,9 +7,9 @@ from src.dataset import PrescriptionDataset
 from src.ocr import CRNN, LabelConverter
 
 
-# -------------------------
+
 # Config (LIGHTWEIGHT)
-# -------------------------
+
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 BATCH_SIZE = 12        # smaller = faster on CPU
@@ -17,16 +17,16 @@ EPOCHS = 5            # quick testing
 DATASET_PATH = "dataset"
 
 
-# -------------------------
+
 # Load Dataset
-# -------------------------
+
 train_dataset = PrescriptionDataset(
     base_dir=DATASET_PATH,
     split="Training",
     augment=False       # OFF for speed (enable later)
 )
 
-# 🔥 Use small subset for fast testing
+#  Use small subset for fast testing
 train_dataset.df = train_dataset.df.sample(1000, random_state=42)
 
 train_loader = DataLoader(
@@ -36,9 +36,9 @@ train_loader = DataLoader(
 )
 
 
-# -------------------------
+
 # Model + Tools
-# -------------------------
+
 converter = LabelConverter()
 num_classes = len(converter.char2idx) + 1  # + blank
 
@@ -48,9 +48,9 @@ criterion = nn.CTCLoss(blank=0)
 optimizer = torch.optim.Adam(model.parameters(), lr=1e-3)
 
 
-# -------------------------
+
 # Training Loop
-# -------------------------
+
 for epoch in range(EPOCHS):
     model.train()
     total_loss = 0
@@ -97,16 +97,16 @@ for epoch in range(EPOCHS):
 
         total_loss += loss.item()
 
-        # ✅ update progress bar
+        # update progress bar
         loop.set_postfix(loss=loss.item())
 
     avg_loss = total_loss / len(train_loader)
     print(f"\nEpoch {epoch+1} Avg Loss: {avg_loss:.4f}")
 
 
-# -------------------------
+
 # Save Model
-# -------------------------
+
 torch.save(model.state_dict(), "experiments/exp_03_crnn/model/crnn.pth")
 
-print("\n✅ Training complete. Model saved.")
+print("\n Training complete. Model saved.")

@@ -5,14 +5,14 @@ from PIL import Image
 import cv2
 import numpy as np
 
-# -------------------------------
+
 # Load EasyOCR (Detection)
-# -------------------------------
+
 reader = easyocr.Reader(['en'], gpu=False)  # set True if GPU
 
-# -------------------------------
+
 # Load TrOCR (Recognition)
-# -------------------------------
+
 processor = TrOCRProcessor.from_pretrained("microsoft/trocr-base-handwritten")
 model = VisionEncoderDecoderModel.from_pretrained("microsoft/trocr-base-handwritten")
 
@@ -20,9 +20,9 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 model.to(device)
 
 
-# -------------------------------
+
 # Preprocessing (for handwriting)
-# -------------------------------
+
 def preprocess_image(image_path):
     img = cv2.imread(image_path)
 
@@ -37,9 +37,9 @@ def preprocess_image(image_path):
     return img, gray
 
 
-# -------------------------------
+
 # Crop image using bbox
-# -------------------------------
+
 def crop_from_bbox(image, bbox):
     pts = np.array(bbox).astype(int)
     x_min = np.min(pts[:, 0])
@@ -50,9 +50,9 @@ def crop_from_bbox(image, bbox):
     return image[y_min:y_max, x_min:x_max]
 
 
-# -------------------------------
+
 # TrOCR on cropped region
-# -------------------------------
+
 def trocr_on_crop(crop_img):
     if crop_img is None or crop_img.size == 0:
         return ""
@@ -68,9 +68,9 @@ def trocr_on_crop(crop_img):
     return text.strip()
 
 
-# -------------------------------
+
 # Hybrid OCR
-# -------------------------------
+
 def hybrid_ocr(image_path):
     original_img, processed = preprocess_image(image_path)
 
@@ -116,22 +116,22 @@ from src.matcher import match_medicines
 
 def run_pipeline(image_path, output_dir="outputs/predictions"):
     if not os.path.exists(image_path):
-        print(f"❌ Image not found: {image_path}")
+        print(f" Image not found: {image_path}")
         return
 
     os.makedirs(output_dir, exist_ok=True)
 
-    print(f"\n📄 Processing: {image_path}")
+    print(f"\n Processing: {image_path}")
 
     # ---- Step 1: OCR ----
-    print("\n🔍 Running OCR...")
+    print("\n Running OCR...")
     extracted_text = hybrid_ocr(image_path)
 
     print("\n----- OCR TEXT -----\n")
     print(extracted_text)
 
     # ---- Step 2: Medicine Matching ----
-    print("\n💊 Matching medicines...")
+    print("\n Matching medicines...")
     medicines = match_medicines(extracted_text)
 
     print("\n----- MATCHED MEDICINES -----\n")
@@ -150,7 +150,7 @@ def run_pipeline(image_path, output_dir="outputs/predictions"):
         for med in medicines:
             f.write(f"- {med}\n")
 
-    print(f"\n✅ Results saved to: {output_path}")
+    print(f"\n Results saved to: {output_path}")
 
 
 if __name__ == "__main__":

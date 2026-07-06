@@ -81,7 +81,7 @@ FineTune Epoch 14/15: 100%|██████████| 98/98 [00:14<00:00,  
 Epoch 14 Loss: 260.7379
 FineTune Epoch 15/15: 100%|██████████| 98/98 [00:13<00:00,  7.03it/s, loss=2.63]Epoch 15 Loss: 259.9018
 
-✅ Fine-tuning complete. Model saved as crnn_finetuned.pth
+Fine-tuning complete. Model saved as crnn_finetuned.pth
 
 $ python main.py
 [INFO] CRNN model loaded.

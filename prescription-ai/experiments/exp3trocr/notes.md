@@ -1,12 +1,12 @@
 hug
 
-💊 Matching medicines...
+ Matching medicines...
 
 ----- MATCHED MEDICINES -----
 
 - ace
 
-✅ Results saved to: outputs/predictions\prescription.txt
+ Results saved to: outputs/predictions\prescription.txt
 
 rsara@Vivobook_16 MINGW64 /d/Deep Learning Project/prescription-ai (main)
 $ python main.py --image prescription.png
@@ -17,9 +17,9 @@ Using a slow image processor as `use_fast` is unset and a slow processor was sav
 Some weights of VisionEncoderDecoderModel were not initialized from the model checkpoint at microsoft/trocr-base-handwritten and are newly initialized: ['encoder.pooler.dense.bias', 'encoder.pooler.dense.weight']
 You should probably TRAIN this model on a down-stream task to be able to use it for predictions and inference.
 
-📄 Processing: prescription.png
+ Processing: prescription.png
 
-🔍 Running OCR...
+ Running OCR...
 C:\Users\rsara\AppData\Local\Programs\Python\Python313\Lib\site-packages\torch\utils\data\dataloader.py:775: UserWarning: 'pin_memory' argument is set as true but no accelerator is found, then device pinned memory won't be used.
   super().__init__(loader)
 
@@ -56,12 +56,12 @@ Talk to yourself with a kinder voice
 03 04
 Refills:
 
-💊 Matching medicines...
+ Matching medicines...
 
 ----- MATCHED MEDICINES -----
 
 - ace
 
-✅ Results saved to: outputs/predictions\prescription.txt
+ Results saved to: outputs/predictions\prescription.txt
 
 rsara@Vivobook_16 MINGW64 /d/Deep Learning Project/prescription-ai (main)

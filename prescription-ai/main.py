@@ -6,13 +6,13 @@ import shutil
 import os
 import uuid
 
-# 🔥 import your existing function
+
 from src.ocr import extract_prescription_text
 
 # =========================================
 # CONFIG
 # =========================================
-UPLOAD_DIR = "D:/Deep Learning Project/prescription-ai/src"   # 🔥 CHANGE THIS PATH
+UPLOAD_DIR = "D:/Deep Learning Project/prescription-ai/src" 
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
@@ -39,7 +39,7 @@ async def analyze(file: UploadFile = File(...)):
     with open(save_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    print(f"✅ Saved file at: {save_path}")
+    print(f" Saved file at: {save_path}")
 
     # =========================================
     # RUN YOUR EXISTING PIPELINE
