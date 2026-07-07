@@ -88,3 +88,6 @@ Create `.env` files from the `.env.example` files or set the values directly in 
 - The backend now reads `GROQ_API_KEY` from environment variables.
 - Uploaded images are handled in memory and not stored permanently in production.
 - The frontend no longer hardcodes `127.0.0.1:8000` for the backend.
+
+
+
