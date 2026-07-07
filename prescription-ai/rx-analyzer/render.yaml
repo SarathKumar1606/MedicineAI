@@ -1,0 +1,26 @@
+services:
+  - name: rx-analyzer-backend
+    type: web
+    env: python
+    plan: free
+    root: backend
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /
+    envVars:
+      - key: GROQ_API_KEY
+        sync: false
+        value: ""
+    autoDeploy: true
+
+  - name: rx-analyzer-frontend
+    type: web
+    env: node
+    plan: free
+    root: my-app
+    branch: main
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    healthCheckPath: /
+    autoDeploy: true
